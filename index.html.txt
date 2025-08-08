@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OTP Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial,sans-serif; margin:0; padding:0; background:#e9ecef; }
+    #login, #chat { max-width: 400px; margin: auto; padding: 20px; background: white; border-radius: 8px; margin-top: 40px; box-shadow: 0 0 10px #ccc; }
+    #chat { display:none; flex-direction: column; height: 80vh; }
+    #messages { flex:1; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; background:#f8f9fa; border-radius:5px;}
+    #messages div { margin-bottom:8px; }
+    .me { color: blue; font-weight: bold; }
+    .other { color: green; font-weight: bold; }
+    input, button { padding: 10px; font-size: 16px; width: 100%; margin-bottom: 10px; border-radius: 5px; border:1px solid #ccc; }
+    button { background: #007bff; color: white; border:none; cursor:pointer; }
+    button:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+
+<div id="login">
+  <h2>Enter or Create Room</h2>
+  <input id="roomInput" placeholder="Room Code (any code)" />
+  <button onclick="joinRoom()">Join/Create Room</button>
+</div>
+
+<div id="chat">
+  <h2>OTP Chat Room: <span id="roomName"></span></h2>
+  <div id="messages"></div>
+  <input id="msgInput" placeholder="Type message..." />
+  <button onclick="sendMessage()">Send</button>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+  // Your Firebase config here:
+  const firebaseConfig = {
+    apiKey: "AIzaSyChlNNjST_Gt9TtThaHTyXlzqdr1oAoG3U",
+    authDomain: "otp-chat--bawan.firebaseapp.com",
+    databaseURL: "https://otp-chat--bawan-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "otp-chat--bawan",
+    storageBucket: "otp-chat--bawan.appspot.com",
+    messagingSenderId: "24716338942",
+    appId: "1:24716338942:web:6fb688b826459b68bce7af"
+  };
+  
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let userName = "";
+  let room = "";
+  const messagesDiv = document.getElementById('messages');
+
+  function joinRoom() {
+    room = document.getElementById('roomInput').value.trim();
+    if (!room) {
+      alert("Please enter a room code");
+      return;
+    }
+    userName = prompt("Enter your name");
+    if (!userName) {
+      alert("Name is required");
+      return;
+    }
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('chat').style.display = 'flex';
+    document.getElementById('roomName').textContent = room;
+    listenMessages();
+  }
+
+  function listenMessages() {
+    const msgsRef = db.ref('rooms/' + room + '/messages');
+    msgsRef.off();
+    msgsRef.on('child_added', snapshot => {
+      const msg = snapshot.val();
+      const msgDiv = document.createElement('div');
+      msgDiv.textContent = msg.name + ": " + msg.text;
+      msgDiv.className = (msg.name === userName) ? 'me' : 'other';
+      messagesDiv.appendChild(msgDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+  }
+
+  function sendMessage() {
+    const textInput = document.getElementById('msgInput');
+    const text = textInput.value.trim();
+    if (!text) return;
+    const msgsRef = db.ref('rooms/' + room + '/messages');
+    msgsRef.push({ name: userName, text: text });
+    textInput.value = '';
+  }
+</script>
+
+</body>
+</html>
